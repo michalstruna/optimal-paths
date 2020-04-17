@@ -151,6 +151,7 @@ public class BlockSortedFile<TRecordId, TRecord extends Serializable> implements
                         start = blockIndex + 1;
                     }
                 } else {
+                    goToBlock(file, blockIndex);
                     logger.accept(BlockFileAction.RECORD_FOUND, buffer.records[recordIndex]);
                     return buffer.records[recordIndex];
                 }
@@ -177,7 +178,7 @@ public class BlockSortedFile<TRecordId, TRecord extends Serializable> implements
         logger.accept(BlockFileAction.SEARCH_START, recordId);
         readControlBlock(file);
 
-        if (controlBlock.blocksCount == 0) {
+        if (controlBlock.blocksCount == 0) { // There are no blocks in file.
             logger.accept(BlockFileAction.RECORD_NOT_FOUND, recordId);
             return -1;
         }
@@ -204,6 +205,7 @@ public class BlockSortedFile<TRecordId, TRecord extends Serializable> implements
                     return -1;
                 }
             } else {
+                goToBlock(file, blockIndex);
                 logger.accept(BlockFileAction.RECORD_FOUND, buffer.records[recordIndex]);
                 return recordIndex;
             }
@@ -222,7 +224,6 @@ public class BlockSortedFile<TRecordId, TRecord extends Serializable> implements
             if (recordIndex != -1) {
                 logger.accept(BlockFileAction.RECORD_REMOVED, buffer.records[recordIndex]);
                 buffer.records[recordIndex] = null;
-
                 file.write(toBytes(buffer));
             }
         } catch (Exception e) {
@@ -237,13 +238,48 @@ public class BlockSortedFile<TRecordId, TRecord extends Serializable> implements
     private int estimateBlockIndex(RandomAccessFile file, TRecordId recordId) throws IOException, ClassNotFoundException {
         int idValue = valueIdAccessor.apply(recordId);
 
-        readBlock(file, 0); // Read key of first record in first block.
-        int firstIdValue = valueIdAccessor.apply(idAccessor.apply(buffer.getFirstRecord())); // TODO: Record could be null.
+        int index = 0;
+        Integer firstIdValue = null;
 
-        readBlock(file, controlBlock.blocksCount - 1); // REad ky of last record in last block.
-        int lastIdValue = valueIdAccessor.apply(idAccessor.apply(buffer.getLastRecord())); // TODO: Record could be null.
+        while (index < controlBlock.blocksCount) {  // Read key of first record in first block.
+            readBlock(file, index);
+            TRecord firstRecord = buffer.getFirstRecord();
 
-        double relativeDistance = ((double) idValue - firstIdValue) / (lastIdValue - firstIdValue);
+            if (firstRecord == null) {
+                index++;
+            } else {
+                firstIdValue = valueIdAccessor.apply(idAccessor.apply(firstRecord));
+                break;
+            }
+        }
+
+        index = controlBlock.blocksCount - 1;
+        Integer lastIdValue = null;
+
+        while (index >= 0) {  // Read key of first record in first block.
+            readBlock(file, index);
+            TRecord lastRecord = buffer.getLastRecord();
+
+            if (lastRecord == null) {
+                index--;
+            } else {
+                lastIdValue = valueIdAccessor.apply(idAccessor.apply(lastRecord));
+                break;
+            }
+        }
+
+        System.out.println(firstIdValue + " " + lastIdValue);
+
+        if (firstIdValue == null || lastIdValue == null) { // Although there are blocks, they are all empty.
+            return -1;
+        }
+
+        double relativeDistance = Math.min(1, Math.max(0, ((double) idValue - firstIdValue) / (lastIdValue - firstIdValue)));
+
+        if (Double.isNaN(relativeDistance)) { // Both min key and max key are same => there is only 1 block with 1 record.
+            relativeDistance = 0;
+        }
+
         logger.accept(BlockFileAction.RELATIVE_DISTANCE_CALCULATED, relativeDistance);
 
         return Math.min((int) Math.floor(controlBlock.blocksCount * relativeDistance), controlBlock.blocksCount - 1);
