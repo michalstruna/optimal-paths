@@ -8,7 +8,6 @@ import paths.Crossroad;
 import paths.CrossroadType;
 import paths.ICrossroad;
 import structures.BlockSortedFile;
-import structures.IObjectFile;
 
 import java.awt.*;
 import java.awt.geom.Point2D;
@@ -62,10 +61,12 @@ public class BlockFileController implements Initializable {
 
     @FXML
     private void handleGenerate(ActionEvent event) {
+        int maxCount = 26 * 26 * 26; // 17 576 because of english alphabet has 26 characters, so there are 26 * 26 * 26 options for unique ID of length 3.
         FormDialog dialog = new FormDialog("Generování", "Vygenerovat");
-        dialog.addSlider("crossroads", "Křižovatek", 0, 10000, 5000, 1000, 1);
+        dialog.addNumberField("crossroads", "Křižovatek (max 17 576)", 5000, 0, maxCount);
 
         dialog.run(data -> {
+            log(SEPARATOR);
             int crossroads = (int) data.get("crossroads");
             ICrossroad[] result = new ICrossroad[crossroads];
 
@@ -76,8 +77,6 @@ public class BlockFileController implements Initializable {
                 result[i] = new Crossroad(id, position, type);
             }
 
-            IObjectFile<String, ICrossroad> file = new BlockSortedFile<>(fileName, c -> c.getId(), id -> id.hashCode());
-
             file.build(result);
 
             log("Vygenerováno " + crossroads + " křižovatek" + (crossroads == 0 ? "." : " s ID od " + result[0].getId() + " do " + result[result.length - 1].getId()));
@@ -86,7 +85,7 @@ public class BlockFileController implements Initializable {
 
     /**
      * Returns string of length 3 by index.
-     * Examples: 0 => "aaa", 1 => "aab", 25 => "aaz", 26 => "aba", ...
+     * Examples: 0 => "aaa", 1 => "aab", 25 => "aaz", 26 => "aba", 17575 => "zzz"
      */
     private String getStringByIndex(int index) {
         StringBuilder result = new StringBuilder();

@@ -441,7 +441,7 @@ public class MainController implements Initializable {
                 Stage stage = new Stage();
 
                 stage.setTitle("Blokový soubor " + file.getName());
-                stage.setScene(new Scene(root, 450, 720));
+                stage.setScene(new Scene(root, 530, 720));
                 stage.show();
             } catch (Exception exception) {
                 Message.showError("Vytvoření se nezdařilo", exception.getMessage());
@@ -463,7 +463,7 @@ public class MainController implements Initializable {
                 Stage stage = new Stage();
 
                 stage.setTitle("Blokový soubor " + file.getName());
-                stage.setScene(new Scene(root, 450, 720));
+                stage.setScene(new Scene(root, 530, 720));
                 stage.show();
             } catch (Exception exception) {
                 Message.showError("Načtení se nezdařilo", exception.getMessage());

@@ -121,16 +121,20 @@ public class FormDialog {
         addNumberField(name, text, 0);
     }
 
+    public void addNumberField(String name, String text, int value) {
+        addNumberField(name, text, 0, 0, Integer.MAX_VALUE);
+    }
+
     /**
      * Add number field to dialog.
      */
-    public void addNumberField(String name, String text, int value) {
+    public void addNumberField(String name, String text, int value, int min, int max) {
         int row = rowsCount++;
         Label label = new Label(text);
 
 
-        Spinner field = new Spinner<>(0, Integer.MAX_VALUE, value);
-        field.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, Integer.MAX_VALUE, value));
+        Spinner field = new Spinner<>(min, max, value);
+        field.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(min, max, value));
 
         TextFormatter<Integer> numberFormatter = new TextFormatter<>(new IntegerStringConverter(), value, c -> {
             if (c.isContentChange()) {
@@ -173,7 +177,7 @@ public class FormDialog {
         Label label = new Label(text);
 
         Label current = new Label("(" + value + ")");
-        current.setPrefWidth(60);
+        current.setPrefWidth(40);
         current.setAlignment(Pos.CENTER_RIGHT);
 
         Slider slider = new Slider(min, max, value);
