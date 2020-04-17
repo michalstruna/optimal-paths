@@ -1,13 +1,11 @@
 package structures;
 
-import gui.BlockFileController;
-
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Comparator;
 
-public class BlockSortedFile<TRecordId, TRecord extends Serializable> implements IObjectFile<TRecordId, TRecord>, Serializable {
+public class BlockSortedFile<TRecordId, TRecord extends Serializable> implements IBlockSortedFile<TRecordId, TRecord>, Serializable {
 
     private String fileName;
     private ControlBlock controlBlock;
@@ -110,7 +108,7 @@ public class BlockSortedFile<TRecordId, TRecord extends Serializable> implements
     @Override
     public TRecord findInterpolating(TRecordId recordId) {
         try (RandomAccessFile file = new RandomAccessFile(fileName, "r")) {
-            int recordIndex = findRecordPositionInterpolating(recordId, file);
+            int recordIndex = findRecordInterpolating(recordId, file);
             return recordIndex == -1 ? null : buffer.records[recordIndex];
         } catch (Exception e) {
             e.printStackTrace();
@@ -144,7 +142,7 @@ public class BlockSortedFile<TRecordId, TRecord extends Serializable> implements
 
                 if (recordIndex == -1) { // Record was not found in current block.
                     int idValue = valueIdAccessor.apply(recordId);
-                    int firstIdValue = valueIdAccessor.apply(idAccessor.apply(buffer.records[0])); // TODO: Fix when record is empty.
+                    int firstIdValue = valueIdAccessor.apply(idAccessor.apply(buffer.getFirstRecord())); // TODO: Fix when record is empty.
                     int lastIdValue = valueIdAccessor.apply(idAccessor.apply(buffer.getLastRecord())); // TODO: Fix when record is empty.
 
                     if (idValue < firstIdValue) { // If search ID is smaller then smallest ID in current block, search for previous block.
@@ -175,7 +173,7 @@ public class BlockSortedFile<TRecordId, TRecord extends Serializable> implements
      *    - else record was not found.
      * @return Index of record in current block (current block is in buffer). -1 if record was not found.
      */
-    private int findRecordPositionInterpolating(TRecordId recordId, RandomAccessFile file) throws IOException, ClassNotFoundException {
+    private int findRecordInterpolating(TRecordId recordId, RandomAccessFile file) throws IOException, ClassNotFoundException {
         logger.accept(BlockFileAction.SEARCH_START, recordId);
         readControlBlock(file);
 
@@ -192,7 +190,7 @@ public class BlockSortedFile<TRecordId, TRecord extends Serializable> implements
 
             if (recordIndex == -1) { // Record was not found in current block.
                 int idValue = valueIdAccessor.apply(recordId);
-                int firstIdValue = valueIdAccessor.apply(idAccessor.apply(buffer.records[0])); // TODO: Fix when record is empty.
+                int firstIdValue = valueIdAccessor.apply(idAccessor.apply(buffer.getFirstRecord())); // TODO: Fix when record is empty.
                 int lastIdValue = valueIdAccessor.apply(idAccessor.apply(buffer.getLastRecord())); // TODO: Fix when record is empty.
 
                 if (idValue < firstIdValue) { // If search ID is smaller then smallest ID in current block, search for previous block.
@@ -211,8 +209,6 @@ public class BlockSortedFile<TRecordId, TRecord extends Serializable> implements
             }
         }
 
-        System.out.println(999);
-
         logger.accept(BlockFileAction.RECORD_NOT_FOUND, recordId);
         return -1;
     }
@@ -221,7 +217,7 @@ public class BlockSortedFile<TRecordId, TRecord extends Serializable> implements
     public void remove(TRecordId recordId) {
         try (RandomAccessFile file = new RandomAccessFile(fileName, "rw")) {
             logger.accept(BlockFileAction.REMOVE_START, recordId);
-            int recordIndex = findRecordPositionInterpolating(recordId, file);
+            int recordIndex = findRecordInterpolating(recordId, file);
 
             if (recordIndex != -1) {
                 logger.accept(BlockFileAction.RECORD_REMOVED, buffer.records[recordIndex]);
@@ -242,7 +238,7 @@ public class BlockSortedFile<TRecordId, TRecord extends Serializable> implements
         int idValue = valueIdAccessor.apply(recordId);
 
         readBlock(file, 0); // Read key of first record in first block.
-        int firstIdValue = valueIdAccessor.apply(idAccessor.apply(buffer.records[0])); // TODO: Record could be null.
+        int firstIdValue = valueIdAccessor.apply(idAccessor.apply(buffer.getFirstRecord())); // TODO: Record could be null.
 
         readBlock(file, controlBlock.blocksCount - 1); // REad ky of last record in last block.
         int lastIdValue = valueIdAccessor.apply(idAccessor.apply(buffer.getLastRecord())); // TODO: Record could be null.
@@ -335,6 +331,19 @@ public class BlockSortedFile<TRecordId, TRecord extends Serializable> implements
             }
 
             return -1;
+        }
+
+        /**
+         * Get first non-null record from block.
+         */
+        private TRecord getFirstRecord() {
+            for (int i = 0; i < records.length; i++) {
+                if (records[i] != null) {
+                    return records[i];
+                }
+            }
+
+            return null;
         }
 
         /**

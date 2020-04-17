@@ -2,7 +2,7 @@ package structures;
 
 import java.io.Serializable;
 
-public interface IObjectFile<TRecordId, TRecord extends Serializable> {
+public interface IBlockSortedFile<TRecordId, TRecord extends Serializable> {
 
     void build(TRecord[] records);
 

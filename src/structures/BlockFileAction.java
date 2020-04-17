@@ -1,14 +1,14 @@
 package structures;
 
 public enum BlockFileAction {
+    FILE_CREATED("Soubor vytvořen"),
+    FILE_OPENED("Soubor otevřen"),
+
     BLOCK_READ("Přečten blok z disku"),
     BLOCK_WRITTEN("Zapsán blok na disk"),
     CONTROL_BLOCK_READ("Přečten řídící blok z disku"),
     CONTROL_BLOCK_WRITTEN("Zapsán řídící blok na disk"),
 
-
-    FILE_CREATED("Soubor vytvořen"),
-    FILE_OPENED("Soubor otevřen"),
     SEARCH_START("Hledání začalo"),
     RELATIVE_DISTANCE_CALCULATED("Relativní vzdálenost"),
     RECORD_FOUND("Záznam nalezen"),
@@ -18,6 +18,7 @@ public enum BlockFileAction {
 
     REMOVE_START("Odebírá se"),
     RECORD_REMOVED("Záznam odebrán"),
+
     EXCEPTION("Exception");
 
     private String name;
