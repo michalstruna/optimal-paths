@@ -173,7 +173,7 @@ public class FormDialog {
         Label label = new Label(text);
 
         Label current = new Label("(" + value + ")");
-        current.setPrefWidth(40);
+        current.setPrefWidth(60);
         current.setAlignment(Pos.CENTER_RIGHT);
 
         Slider slider = new Slider(min, max, value);

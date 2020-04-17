@@ -428,6 +428,50 @@ public class MainController implements Initializable {
     }
 
     @FXML
+    private void handleNewBlockFile(ActionEvent event) {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Vytvořit blokový soubor");
+        File file = fileChooser.showSaveDialog(stage);
+
+        if (file != null) {
+            try {
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("block_file.fxml"));
+                loader.setController(new BlockFileController(file.getAbsolutePath()));
+                Parent root = loader.load();
+                Stage stage = new Stage();
+
+                stage.setTitle("Blokový soubor " + file.getName());
+                stage.setScene(new Scene(root, 450, 720));
+                stage.show();
+            } catch (Exception exception) {
+                Message.showError("Vytvoření se nezdařilo", exception.getMessage());
+            }
+        }
+    }
+
+    @FXML
+    private void handleOpenBlockFile(ActionEvent event) {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Otevřít blokový soubor");
+        File file = fileChooser.showOpenDialog(stage);
+
+        if (file != null) {
+            try {
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("block_file.fxml"));
+                loader.setController(new BlockFileController(file.getAbsolutePath()));
+                Parent root = loader.load();
+                Stage stage = new Stage();
+
+                stage.setTitle("Blokový soubor " + file.getName());
+                stage.setScene(new Scene(root, 450, 720));
+                stage.show();
+            } catch (Exception exception) {
+                Message.showError("Načtení se nezdařilo", exception.getMessage());
+            }
+        }
+    }
+
+    @FXML
     private void handleFindCrossroadCoords(ActionEvent event) {
         FormDialog dialog = new FormDialog("Hledání křižovatky podle souřadnic", "Najít");
         dialog.addNumberField("x", "Souřadnice X");

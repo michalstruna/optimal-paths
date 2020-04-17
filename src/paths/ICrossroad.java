@@ -1,8 +1,9 @@
 package paths;
 
 import java.awt.geom.Point2D;
+import java.io.Serializable;
 
-public interface ICrossroad {
+public interface ICrossroad extends Serializable {
 
     /**
      * @param id  ew ID of crossroad.
