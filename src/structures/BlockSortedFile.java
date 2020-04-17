@@ -268,8 +268,6 @@ public class BlockSortedFile<TRecordId, TRecord extends Serializable> implements
             }
         }
 
-        System.out.println(firstIdValue + " " + lastIdValue);
-
         if (firstIdValue == null || lastIdValue == null) { // Although there are blocks, they are all empty.
             return -1;
         }
