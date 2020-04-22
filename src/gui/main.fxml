@@ -83,9 +83,15 @@
                             <items>
                                 <MenuItem mnemonicParsing="false" onAction="#handleNew" text="Prázdný" />
                                 <MenuItem mnemonicParsing="false" onAction="#handleGenerate" text="Vygenerovat..." />
+                                <MenuItem mnemonicParsing="false" onAction="#handleNewBlockFile" text="Blokový soubor..." />
                             </items>
                         </Menu>
-                        <MenuItem mnemonicParsing="false" onAction="#handleLoad" text="Otevřít..." />
+                        <Menu mnemonicParsing="false" text="Otevřít">
+                            <items>
+                                <MenuItem mnemonicParsing="false" onAction="#handleLoad" text="Zálohu..." />
+                                <MenuItem mnemonicParsing="false" onAction="#handleOpenBlockFile" text="Blokový soubor..." />
+                            </items>
+                        </Menu>
                         <MenuItem mnemonicParsing="false" onAction="#handleSave" text="Uložit jako..." />
                         <MenuItem mnemonicParsing="false" onAction="#handleExit" text="Ukončit" />
                     </items>
