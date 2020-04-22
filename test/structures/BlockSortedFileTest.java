@@ -603,4 +603,5 @@ class TestItem implements Serializable {
     public int hashCode() {
         return Objects.hash(id, value);
     }
+
 }
