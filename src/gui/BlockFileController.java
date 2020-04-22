@@ -7,17 +7,21 @@ import javafx.scene.control.TextArea;
 import paths.Crossroad;
 import paths.CrossroadType;
 import paths.ICrossroad;
+import structures.BlockFileAction;
 import structures.BlockSortedFile;
 
 import java.awt.*;
 import java.awt.geom.Point2D;
 import java.net.URL;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.ResourceBundle;
 
 public class BlockFileController implements Initializable {
 
     private static final String SEPARATOR = "=========="; // Separator of actions in logger console.
+    private static Map<BlockFileAction, Integer> logMap;
 
     @FXML TextArea console;
 
@@ -27,6 +31,7 @@ public class BlockFileController implements Initializable {
 
     public BlockFileController(String fileName) {
         this.fileName = fileName;
+        logMap = new HashMap<>();
     }
 
     public BlockFileController(String fileName, ICrossroad[] crossroads) {
@@ -42,7 +47,10 @@ public class BlockFileController implements Initializable {
                 fileName,
                 ICrossroad::getId,
                 String::hashCode,
-                (action, value) -> log(action.toString() + ": " + (value == null ? "" : value.toString()))
+                (action, value) -> {
+                    log(action.toString() + ": " + (value == null ? "" : value.toString()));
+                    logMap.put(action, logMap.containsKey(action) ? logMap.get(action) + 1 : 1);
+                }
         );
 
         if (crossroads != null) {
@@ -52,6 +60,7 @@ public class BlockFileController implements Initializable {
 
     @FXML
     private void handleFindInterpolating(ActionEvent event) {
+        logMap.clear();
         FormDialog dialog = new FormDialog("Interpolační hledání", "Najít");
         dialog.addTextField("id", "ID");
 
@@ -60,7 +69,7 @@ public class BlockFileController implements Initializable {
             log(SEPARATOR);
             long start = System.currentTimeMillis();
             file.findInterpolating(id);
-            log("Hledání trvalo [ms]: " + (System.currentTimeMillis() - start));
+            log("Přečteno bloků celkem: " + logMap.get(BlockFileAction.BLOCK_READ) + ", hledání trvalo [ms]: " + (System.currentTimeMillis() - start));
         });
     }
 
@@ -113,6 +122,7 @@ public class BlockFileController implements Initializable {
 
     @FXML
     private void handleFindBinary(ActionEvent event) {
+        logMap.clear();
         FormDialog dialog = new FormDialog("Binární hledání", "Najít");
         dialog.addTextField("id", "ID");
 
@@ -121,12 +131,13 @@ public class BlockFileController implements Initializable {
             log(SEPARATOR);
             long start = System.currentTimeMillis();
             file.findBinary(id);
-            log("Hledání trvalo [ms]: " + (System.currentTimeMillis() - start));
+            log("Přečteno bloků celkem: " + logMap.get(BlockFileAction.BLOCK_READ) + ", hledání trvalo [ms]: " + (System.currentTimeMillis() - start));
         });
     }
 
     @FXML
     private void handleRemove(ActionEvent event) {
+        logMap.clear();
         FormDialog dialog = new FormDialog("Odebrání křižovatky", "Odebrat");
         dialog.addTextField("id", "ID");
 
