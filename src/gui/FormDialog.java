@@ -122,7 +122,7 @@ public class FormDialog {
     }
 
     public void addNumberField(String name, String text, int value) {
-        addNumberField(name, text, 0, 0, Integer.MAX_VALUE);
+        addNumberField(name, text, value, 0, Integer.MAX_VALUE);
     }
 
     /**
