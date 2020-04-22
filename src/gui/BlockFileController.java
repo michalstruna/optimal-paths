@@ -69,8 +69,14 @@ public class BlockFileController implements Initializable {
             log(SEPARATOR);
             long start = System.currentTimeMillis();
             file.findInterpolating(id);
-            log("Přečteno bloků celkem: " + logMap.get(BlockFileAction.BLOCK_READ) + ", hledání trvalo [ms]: " + (System.currentTimeMillis() - start));
+            logSearch(start);
         });
+    }
+
+    private void logSearch(long start) {
+        Integer blockRead = logMap.get(BlockFileAction.BLOCK_READ);
+        int totalBlockRead = (blockRead == null ? 0 : blockRead) + logMap.get(BlockFileAction.CONTROL_BLOCK_READ);
+        log("Přečteno bloků celkem (včetně řídícího): " + totalBlockRead + ", hledání trvalo [ms]: " + (System.currentTimeMillis() - start));
     }
 
     @FXML
@@ -131,7 +137,7 @@ public class BlockFileController implements Initializable {
             log(SEPARATOR);
             long start = System.currentTimeMillis();
             file.findBinary(id);
-            log("Přečteno bloků celkem: " + logMap.get(BlockFileAction.BLOCK_READ) + ", hledání trvalo [ms]: " + (System.currentTimeMillis() - start));
+            logSearch(start);
         });
     }
 

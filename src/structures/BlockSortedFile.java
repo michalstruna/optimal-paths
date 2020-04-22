@@ -79,6 +79,7 @@ public class BlockSortedFile<TRecordId, TRecord extends Serializable> implements
             int blockFactor = 100; // TODO: Better estimate of block factor?
             int blocksCount = (int) Math.ceil((double) records.length / blockFactor);
             buildControlFile(file, blocksCount, blockFactor);
+            int maxBlockSize = 0;
 
             for (int i = 0; i < records.length; i += blockFactor) { // Write all data blocks to file.
                 TRecord[] blockRecords = Arrays.copyOfRange(records, i, i + blockFactor);
@@ -87,9 +88,16 @@ public class BlockSortedFile<TRecordId, TRecord extends Serializable> implements
                 logger.accept(BlockFileAction.BLOCK_WRITTEN, i / blockFactor);
                 controlBlock.blocksOffsets[i / blockFactor] = file.getChannel().position();
                 file.write(blockBytes);
+                maxBlockSize = Math.max(maxBlockSize, blockBytes.length);
+
+                if (i == 0) {
+                    controlBlock.minKeyValue = valueIdAccessor.apply(idAccessor.apply(block.getFirstRecord()));
+                }
 
                 if (i >= records.length - blockFactor) {
                     controlBlock.blocksOffsets[(i / blockFactor) + 1] = file.getChannel().position();
+                    controlBlock.maxKeyValue = valueIdAccessor.apply(idAccessor.apply(block.getLastRecord()));
+                    controlBlock.maxBlockSize = maxBlockSize;
                     file.getChannel().position(Integer.BYTES);
                     file.write(toBytes(controlBlock));
                     logControlBlock(BlockFileAction.CONTROL_BLOCK_WRITTEN);
@@ -162,7 +170,6 @@ public class BlockSortedFile<TRecordId, TRecord extends Serializable> implements
                              end = blockIndex - 1;
                              continue;
                          }
-
                     }
 
                     int firstIdValue = valueIdAccessor.apply(idAccessor.apply(firstRecord));
@@ -238,8 +245,8 @@ public class BlockSortedFile<TRecordId, TRecord extends Serializable> implements
                     }
                 }
 
-                int firstIdValue = valueIdAccessor.apply(idAccessor.apply(firstRecord)); // TODO: Fix when record is empty.
-                int lastIdValue = valueIdAccessor.apply(idAccessor.apply(lastRecord)); // TODO: Fix when record is empty.
+                int firstIdValue = valueIdAccessor.apply(idAccessor.apply(firstRecord));
+                int lastIdValue = valueIdAccessor.apply(idAccessor.apply(lastRecord));
 
                 if (idValue < firstIdValue) { // If search ID is smaller then smallest ID in current block, search for previous block.
                     if (lastDirection != 1) {
@@ -276,9 +283,28 @@ public class BlockSortedFile<TRecordId, TRecord extends Serializable> implements
 
             if (recordIndex != -1) {
                 logger.accept(BlockFileAction.RECORD_REMOVED, buffer.records[recordIndex]);
+                TRecord removed = buffer.records[recordIndex];
                 buffer.records[recordIndex] = null;
                 file.write(toBytes(buffer));
                 logger.accept(BlockFileAction.BLOCK_WRITTEN, bufferIndex);
+                boolean shouldUpdateControlBlock = false;
+
+                if (bufferIndex == 0 && buffer.getFirstRecord().equals(removed)) {
+                    TRecord first = getFirstRecord(file);
+                    controlBlock.minKeyValue = first == null ? -Integer.MIN_VALUE : valueIdAccessor.apply(idAccessor.apply(first));
+                    shouldUpdateControlBlock = true;
+                }
+
+                if (bufferIndex == controlBlock.blocksCount - 1 && buffer.getLastRecord().equals(removed)) {
+                    TRecord last = getLastRecord(file);
+                    controlBlock.maxKeyValue = last == null ? -Integer.MIN_VALUE : valueIdAccessor.apply(idAccessor.apply(last));
+                    shouldUpdateControlBlock = true;
+                }
+
+                if (shouldUpdateControlBlock) {
+                    file.getChannel().position(Integer.BYTES);
+                    file.write(toBytes(controlBlock));
+                }
             }
         } catch (Exception e) {
             logger.accept(BlockFileAction.EXCEPTION, e.getMessage());
@@ -334,17 +360,11 @@ public class BlockSortedFile<TRecordId, TRecord extends Serializable> implements
     private int estimateBlockIndex(RandomAccessFile file, TRecordId recordId) throws IOException, ClassNotFoundException {
         int idValue = valueIdAccessor.apply(recordId);
 
-        TRecord firstRecord = getFirstRecord(file);
-        TRecord lastRecord=  getLastRecord(file);
-
-        if (firstRecord == null || lastRecord == null) { // Although there are blocks, they are all empty.
+        if (controlBlock.minKeyValue == Integer.MIN_VALUE || controlBlock.maxKeyValue == Integer.MIN_VALUE) { // Although there are blocks, they are all empty.
             return -1;
         }
 
-        int firstIdValue = valueIdAccessor.apply(idAccessor.apply(firstRecord));
-        int lastIdValue = valueIdAccessor.apply(idAccessor.apply(lastRecord));
-
-        double relativeDistance = ((double) idValue - firstIdValue) / ((double) lastIdValue - firstIdValue);
+        double relativeDistance = ((double) idValue - controlBlock.minKeyValue) / ((double) controlBlock.maxKeyValue - controlBlock.minKeyValue);
 
         if (Double.isNaN(relativeDistance)) { // Both min key and max key are same => there is only 1 block with 1 record.
             relativeDistance = 0;
@@ -371,7 +391,7 @@ public class BlockSortedFile<TRecordId, TRecord extends Serializable> implements
         byte[] controlBlockBuffer = new byte[controlBlockSize];
         file.read(controlBlockBuffer);
         controlBlock = (ControlBlock) fromBytes(controlBlockBuffer);
-        byteBuffer = new byte[10000]; // TODO: Max block size.
+        byteBuffer = new byte[controlBlock.maxBlockSize];
         logControlBlock(BlockFileAction.CONTROL_BLOCK_READ);
     }
 
@@ -409,7 +429,10 @@ public class BlockSortedFile<TRecordId, TRecord extends Serializable> implements
 
         int blocksCount;
         int blockFactor;
+        int maxKeyValue;
+        int minKeyValue;
         long[] blocksOffsets;
+        int maxBlockSize;
 
         public ControlBlock(int blocksCount, int blockFactor, long[] blocksOffsets) {
             this.blocksCount = blocksCount;

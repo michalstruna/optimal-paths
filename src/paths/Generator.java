@@ -27,8 +27,13 @@ public class Generator implements IGenerator {
         for (ICrossroad crossroad : generatedCrossroads) {
             for (int j = 0; j < edgeFrequency; j++) {
                 ICrossroad nearest = getNearest(generatedCrossroads, crossroad);
+
                 if (nearest != null) {
-                    graph.addEdge(crossroad.getId(), nearest.getId(), new Path(crossroad, nearest, Math.random() > broken));
+                    try {
+                        graph.addEdge(crossroad.getId(), nearest.getId(), new Path(crossroad, nearest, Math.random() > broken));
+                    } catch (Exception e) {
+
+                    }
                 }
             }
         }

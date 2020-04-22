@@ -138,7 +138,7 @@ public class BlockSortedFileTest {
 
         TestItem item = file.findInterpolating(items[4].getId());
         assertEquals(items[4], item); // Searched record should be same as expected record.
-        assertTrue(log.get(BlockFileAction.BLOCK_READ).equals(Arrays.asList(new Integer[] { 0, 0, 0 }))); // Block with min key, block with max key and block with searched record should be read.
+        assertTrue(log.get(BlockFileAction.BLOCK_READ).equals(Arrays.asList(new Integer[] { 0 }))); // Only block with searched record should be read.
         assertEquals(0, log.get(BlockFileAction.BLOCK_WRITTEN).size() - blocksWritten); // No block should be written.
     }
 
@@ -149,7 +149,7 @@ public class BlockSortedFileTest {
 
         TestItem item = file.findInterpolating(items[0].getId());
         assertEquals(items[0], item); // Searched record should be same as expected record.
-        assertTrue(log.get(BlockFileAction.BLOCK_READ).equals(Arrays.asList(new Integer[] { 0, 0, 0 }))); // Block with min key, block with max key and block with searched record should be read.
+        assertTrue(log.get(BlockFileAction.BLOCK_READ).equals(Arrays.asList(new Integer[] { 0 }))); // Only block with searched record should be read.
         assertEquals(0, log.get(BlockFileAction.BLOCK_WRITTEN).size() - blocksWritten); // No block should be written.
     }
 
@@ -160,7 +160,7 @@ public class BlockSortedFileTest {
 
         TestItem item = file.findInterpolating(items[9].getId());
         assertEquals(items[9], item); // Searched record should be same as expected record.
-        assertTrue(log.get(BlockFileAction.BLOCK_READ).equals(Arrays.asList(new Integer[] { 0, 0, 0 }))); // Block with min key, block with max key and block with searched record should be read.
+        assertTrue(log.get(BlockFileAction.BLOCK_READ).equals(Arrays.asList(new Integer[] { 0 }))); // Only block with searched record should be read.
         assertEquals(0, log.get(BlockFileAction.BLOCK_WRITTEN).size() - blocksWritten); // No block should be written.
     }
 
@@ -171,7 +171,7 @@ public class BlockSortedFileTest {
 
         TestItem item = file.findInterpolating("non-existing-id");
         assertNull(item);
-        assertTrue(log.get(BlockFileAction.BLOCK_READ).size() <= 3); // Block with min key, block with max key and optionally block with searched record should be read.
+        assertFalse(log.containsKey(BlockFileAction.BLOCK_READ)); // No block should be read.
         assertEquals(0, log.get(BlockFileAction.BLOCK_WRITTEN).size() - blocksWritten); // No block should be written.
     }
 
@@ -182,7 +182,7 @@ public class BlockSortedFileTest {
 
         TestItem item = file.findInterpolating(items[99].getId());
         assertEquals(items[99], item); // Searched record should be same as expected record.
-        assertTrue(log.get(BlockFileAction.BLOCK_READ).equals(Arrays.asList(new Integer[] { 0, 99, 0 }))); // Block with min key, block with max key and block with searched record should be read.
+        assertTrue(log.get(BlockFileAction.BLOCK_READ).equals(Arrays.asList(new Integer[] { 0 }))); // Only block with searched record should be read.
         assertEquals(0, log.get(BlockFileAction.BLOCK_WRITTEN).size() - blocksWritten); // No block should be written.
     }
 
@@ -193,7 +193,7 @@ public class BlockSortedFileTest {
 
         TestItem item = file.findInterpolating(items[0].getId());
         assertEquals(items[0], item); // Searched record should be same as expected record.
-        assertTrue(log.get(BlockFileAction.BLOCK_READ).equals(Arrays.asList(new Integer[] { 0, 99, 0 }))); // Block with min key, block with max key and block with searched record should be read.
+        assertTrue(log.get(BlockFileAction.BLOCK_READ).equals(Arrays.asList(new Integer[] { 0 }))); // Only block with searched record should be read.
         assertEquals(0, log.get(BlockFileAction.BLOCK_WRITTEN).size() - blocksWritten); // No block should be written.
     }
 
@@ -204,7 +204,7 @@ public class BlockSortedFileTest {
 
         TestItem item = file.findInterpolating(items[9999].getId());
         assertEquals(items[9999], item); // Searched record should be same as expected record.
-        assertTrue(log.get(BlockFileAction.BLOCK_READ).equals(Arrays.asList(new Integer[] { 0, 99, 99 }))); // Block with min key, block with max key and block with searched record should be read.
+        assertTrue(log.get(BlockFileAction.BLOCK_READ).equals(Arrays.asList(new Integer[] { 99 }))); // Only block with searched record should be read.
         assertEquals(0, log.get(BlockFileAction.BLOCK_WRITTEN).size() - blocksWritten); // No block should be written.
     }
 
@@ -538,6 +538,36 @@ public class BlockSortedFileTest {
 
         item = file.findInterpolating(items[304].getId());
         assertEquals(items[304], item);
+    }
+
+    @Test
+    public void findItemAfterRemoveAllRecords() {
+        TestItem[] items = createFileAndBuild(205);
+
+        TestItem item = file.findInterpolating(items[0].getId());
+        assertEquals(items[0], item);
+
+        item = file.findInterpolating(items[100].getId());
+        assertEquals(items[100], item);
+
+        for (int i = 0; i < 205; i++) {
+            file.remove(items[i].getId());
+        }
+
+        item = file.findInterpolating(items[0].getId());
+        assertNull(item);
+
+        item = file.findInterpolating(items[100].getId());
+        assertNull(item);
+    }
+
+    @Test
+    public void findItemAfterRemoveItemInSmallFile() {
+        TestItem[] items = { new TestItem("aaa", 1), new TestItem("aab", 2), new TestItem("aac", 3) };
+        createFile();
+        file.build(items);
+
+        file.findInterpolating(items[0].getId());
     }
 
 }
