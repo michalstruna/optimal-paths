@@ -54,7 +54,7 @@ public class BlockSortedFile<TRecordId, TRecord extends Serializable> implements
      */
     private void buildControlFile(RandomAccessFile file, int blocksCount, int blockFactor) throws IOException {
         file.setLength(0);
-        controlBlock = new ControlBlock(blocksCount, blockFactor, 0);
+        controlBlock = new ControlBlock(blocksCount, blockFactor, new long[blocksCount + 1]);
         byte[] controlBlockBytes = toBytes(controlBlock);
         controlBlockSize = controlBlockBytes.length;
 
@@ -83,17 +83,17 @@ public class BlockSortedFile<TRecordId, TRecord extends Serializable> implements
                 TRecord[] blockRecords = Arrays.copyOfRange(records, i, i + blockFactor);
                 Block block = new Block(blockRecords);
                 byte[] blockBytes = toBytes(block);
+                logger.accept(BlockFileAction.BLOCK_WRITTEN, i / blockFactor);
+                controlBlock.blocksOffsets[i / blockFactor] = file.getChannel().position();
+                file.write(blockBytes);
 
-                if (i == 0) {
-                    controlBlock.blockSize = blockBytes.length;
+                if (i >= records.length - blockFactor) {
+                    controlBlock.blocksOffsets[(i / blockFactor) + 1] = file.getChannel().position();
                     file.getChannel().position(Integer.BYTES);
                     file.write(toBytes(controlBlock));
                     logControlBlock(BlockFileAction.CONTROL_BLOCK_WRITTEN);
                     goToBlock(file, 0);
                 }
-
-                logger.accept(BlockFileAction.BLOCK_WRITTEN, i / blockFactor);
-                file.write(blockBytes);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -102,7 +102,7 @@ public class BlockSortedFile<TRecordId, TRecord extends Serializable> implements
     }
 
     private void logControlBlock(BlockFileAction action) {
-        logger.accept(action, "blocks: " + controlBlock.blocksCount + ", block factor: " + controlBlock.blockFactor + ", block size: " + (Math.floor(10 * controlBlock.blockSize / 1024) / 10) + " kB");
+        logger.accept(action, "blocks: " + controlBlock.blocksCount + ", block factor: " + controlBlock.blockFactor);
     }
 
     @Override
@@ -287,8 +287,7 @@ public class BlockSortedFile<TRecordId, TRecord extends Serializable> implements
      * Set position in file to nth data block.
      */
     private void goToBlock(RandomAccessFile file, int nth) throws IOException {
-        int position = nth * controlBlock.blockSize + controlBlockSize + Integer.BYTES;
-        file.getChannel().position(position);
+        file.getChannel().position(controlBlock.blocksOffsets[nth]);
     }
 
     /**
@@ -300,7 +299,7 @@ public class BlockSortedFile<TRecordId, TRecord extends Serializable> implements
         byte[] controlBlockBuffer = new byte[controlBlockSize];
         file.read(controlBlockBuffer);
         controlBlock = (ControlBlock) fromBytes(controlBlockBuffer);
-        byteBuffer = new byte[controlBlock.blockSize];
+        byteBuffer = new byte[10000]; // TODO: Max block size.
         logControlBlock(BlockFileAction.CONTROL_BLOCK_READ);
     }
 
@@ -337,12 +336,12 @@ public class BlockSortedFile<TRecordId, TRecord extends Serializable> implements
 
         int blocksCount;
         int blockFactor;
-        int blockSize;
+        long[] blocksOffsets;
 
-        public ControlBlock(int blocksCount, int blockFactor, int blockSize) {
+        public ControlBlock(int blocksCount, int blockFactor, long[] blocksOffsets) {
             this.blocksCount = blocksCount;
             this.blockFactor = blockFactor;
-            this.blockSize = blockSize;
+            this.blocksOffsets = blocksOffsets;
         }
     }
 

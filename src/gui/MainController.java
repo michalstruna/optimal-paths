@@ -450,6 +450,28 @@ public class MainController implements Initializable {
     }
 
     @FXML
+    private void handleExportBlockFile(ActionEvent event) {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Vyexportovat křižovatky do blokového souboru");
+        File file = fileChooser.showSaveDialog(stage);
+
+        if (file != null) {
+            try {
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("block_file.fxml"));
+                loader.setController(new BlockFileController(file.getAbsolutePath(), crossroads));
+                Parent root = loader.load();
+                Stage stage = new Stage();
+
+                stage.setTitle("Blokový soubor " + file.getName());
+                stage.setScene(new Scene(root, 530, 720));
+                stage.show();
+            } catch (Exception exception) {
+                Message.showError("Export se nezdařil", exception.getMessage());
+            }
+        }
+    }
+
+    @FXML
     private void handleOpenBlockFile(ActionEvent event) {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Otevřít blokový soubor");

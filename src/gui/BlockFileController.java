@@ -12,6 +12,7 @@ import structures.BlockSortedFile;
 import java.awt.*;
 import java.awt.geom.Point2D;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.ResourceBundle;
 
 public class BlockFileController implements Initializable {
@@ -22,9 +23,15 @@ public class BlockFileController implements Initializable {
 
     private String fileName;
     private BlockSortedFile<String, ICrossroad> file;
+    private ICrossroad[] crossroads;
 
     public BlockFileController(String fileName) {
         this.fileName = fileName;
+    }
+
+    public BlockFileController(String fileName, ICrossroad[] crossroads) {
+        this(fileName);
+        this.crossroads = crossroads;
     }
 
     @Override
@@ -37,6 +44,10 @@ public class BlockFileController implements Initializable {
                 String::hashCode,
                 (action, value) -> log(action.toString() + ": " + (value == null ? "" : value.toString()))
         );
+
+        if (crossroads != null) {
+            file.build(crossroads);
+        }
     }
 
     @FXML

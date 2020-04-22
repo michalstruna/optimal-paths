@@ -93,6 +93,11 @@
                             </items>
                         </Menu>
                         <MenuItem mnemonicParsing="false" onAction="#handleSave" text="Uložit jako..." />
+                        <Menu mnemonicParsing="false" text="Exportovat jako">
+                            <items>
+                                <MenuItem mnemonicParsing="false" onAction="#handleExportBlockFile" text="Blokový soubor..." />
+                            </items>
+                        </Menu>
                         <MenuItem mnemonicParsing="false" onAction="#handleExit" text="Ukončit" />
                     </items>
                 </Menu>
