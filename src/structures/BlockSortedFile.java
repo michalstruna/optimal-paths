@@ -41,7 +41,7 @@ public class BlockSortedFile<TRecordId, TRecord extends Serializable> implements
             try (RandomAccessFile file = new RandomAccessFile(fileName, "rw")) {
                 logger.accept(BlockFileAction.FILE_CREATED, fileName);
                 buildControlFile(file, 0, 0);
-                logger.accept(BlockFileAction.CONTROL_BLOCK_WRITTEN, "blocks: " + controlBlock.blocksCount + ", block factor: " + controlBlock.blockFactor + ", block size: " + (Math.floor(10 * byteBuffer.length / 1024) / 10) + " kB");
+                logControlBlock(BlockFileAction.CONTROL_BLOCK_WRITTEN);
             } catch (Exception e) {
                 logger.accept(BlockFileAction.EXCEPTION, e.getMessage());
             }
@@ -289,13 +289,13 @@ public class BlockSortedFile<TRecordId, TRecord extends Serializable> implements
                 logger.accept(BlockFileAction.BLOCK_WRITTEN, bufferIndex);
                 boolean shouldUpdateControlBlock = false;
 
-                if (bufferIndex == 0 && buffer.getFirstRecord().equals(removed)) {
+                if (bufferIndex == 0 && buffer.getFirstRecord() != null && buffer.getFirstRecord().equals(removed)) {
                     TRecord first = getFirstRecord(file);
                     controlBlock.minKeyValue = first == null ? -Integer.MIN_VALUE : valueIdAccessor.apply(idAccessor.apply(first));
                     shouldUpdateControlBlock = true;
                 }
 
-                if (bufferIndex == controlBlock.blocksCount - 1 && buffer.getLastRecord().equals(removed)) {
+                if (bufferIndex == controlBlock.blocksCount - 1 && buffer.getLastRecord() != null && buffer.getLastRecord().equals(removed)) {
                     TRecord last = getLastRecord(file);
                     controlBlock.maxKeyValue = last == null ? -Integer.MIN_VALUE : valueIdAccessor.apply(idAccessor.apply(last));
                     shouldUpdateControlBlock = true;
